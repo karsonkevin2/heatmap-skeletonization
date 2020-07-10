@@ -1,0 +1,4 @@
+https://a.tile.openstreetmap.org/0/0/0.png
+https://docs.microsoft.com/en-us/azure/azure-maps/zoom-levels-and-tile-grid?tabs=csharp
+https://wiki.openstreetmap.org/wiki/Zoom_levels
+https://heatmap-external-a.strava.com/tiles-auth/all/hot/2/0/1.png?Key-Pair-Id=APKAIDPUN4QMG7VUQPSA&Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vaGVhdG1hcC1leHRlcm5hbC0qLnN0cmF2YS5jb20vKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU5NTE4NzMzM30sIkRhdGVHcmVhdGVyVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNTkzOTYzMzMzfX19XX0_&Signature=k8F3Iz4oM6TPmu~tI5t9UXprYJdVYSalyIX~2bNPPv2BP6q8SfB2Bi-u0wk0m93ir4YGHqLTnjuwu2XD99T0Eo23VqtsbdifscBChgLvK78SORqHQM2NJ9xBzIzgo9fn8~~9ICgPpIkYZZ177a-oFLA8Zwma~T0o4yt1~6hqvqjMag770izGd980Umu~MYjxa7L7yVBLBO0CMbw1MCd3v4UjdITzmZQXNdDL8Dd8Y8nPhhv~LJncSDJC1td4ADWlsWNZwnOxXjvIZMT3k4Y5minLjuPtpksLHyvJ~3AIWs7LEqcM7vUbrXsHh~sc3NXDeWK2H62uhlYFA9Ugip~-cw__
