@@ -13,9 +13,6 @@ close all
 %   how well defined a line must be
 
 
-
-
-
 if rem(padsize,1) ~= 0
     warning('rounding fractional padding');
     padsize = round(padsize);
@@ -33,6 +30,7 @@ elseif size(size(im),2) < 2
 else
     img = im;
 end
+img = rescale(img);
 [sizeY, sizeX] = size(img);
 
 if 0 < blur
@@ -42,6 +40,7 @@ elseif blur < 0
 else
     imblur = img;
 end
+
 
 
 %TODO sobel vs prewitt
