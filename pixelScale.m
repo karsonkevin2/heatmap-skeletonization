@@ -1,6 +1,17 @@
 function scale = pixelScale(latitude, zoom, tileSize)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+%Determine the pixel resolution of a given map
+%
+%   EXAMPLES:
+%       scale = pixelScale(41.661, 15, 512)
+%
+%   INPUT:
+%       latitude - the latitude of the desired location
+%           (-90,90) in degrees
+%       zoom - the zoom level of the tile
+%           [0,infinity)
+%       tileSize - the resolution of the tile in pixels
+%           probably either 256 or 512
+
 %https://wiki.openstreetmap.org/wiki/Zoom_levels
 
 

@@ -100,7 +100,7 @@ if theta == -1
     theta = 120;
 end
 if thresh == -1
-    thresh = 3;
+    thresh = 0;
 end
 
 
@@ -356,13 +356,12 @@ if 0 < recurse
                         end
                     end
                 end
-                if count8 == 0;
+                if count8 = 0;
                     skelpad(y+1,x+1) = 0;
                 end
             end
         end
     end
-end
 
 for asdf=1:recurse
     for x=1:sizeX

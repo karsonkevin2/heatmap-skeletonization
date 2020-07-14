@@ -1,11 +1,8 @@
 function imgArray = readWebTiles(latitude,longitude,zoom,tileSize,pad,url)
 %Reads a map area from an online tile server
 %
-%OBEY THE TILE SERVER USAGE POLICY
-%
 %   EXAMPLE
-%       imgArray = readWebTiles(41.661, -91.536, 15, 256, 2, 'https://a.tile.openstreetmap.org/{zoom}/{x}/{y}.png');
-%       'https://heatmap-external-a.strava.com/tiles-auth/all/hot/{zoom}/{x}/{y}.png?Key-Pair-Id=APKAIDPUN4QMG7VUQPSA&Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vaGVhdG1hcC1leHRlcm5hbC0qLnN0cmF2YS5jb20vKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU5NTE4NzMzM30sIkRhdGVHcmVhdGVyVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNTkzOTYzMzMzfX19XX0_&Signature=k8F3Iz4oM6TPmu~tI5t9UXprYJdVYSalyIX~2bNPPv2BP6q8SfB2Bi-u0wk0m93ir4YGHqLTnjuwu2XD99T0Eo23VqtsbdifscBChgLvK78SORqHQM2NJ9xBzIzgo9fn8~~9ICgPpIkYZZ177a-oFLA8Zwma~T0o4yt1~6hqvqjMag770izGd980Umu~MYjxa7L7yVBLBO0CMbw1MCd3v4UjdITzmZQXNdDL8Dd8Y8nPhhv~LJncSDJC1td4ADWlsWNZwnOxXjvIZMT3k4Y5minLjuPtpksLHyvJ~3AIWs7LEqcM7vUbrXsHh~sc3NXDeWK2H62uhlYFA9Ugip~-cw__');
+%       imgArray = readWebTiles(41.661, -91.536, 15, 5'https://heatmap-external-{switch:a,b,c}.strava.com/tiles-auth/all/hot/{zoom}/{x}/{y}.png?Key-Pair-Id=APKAIDPUN4QMG7VUQPSA&Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vaGVhdG1hcC1leHRlcm5hbC0qLnN0cmF2YS5jb20vKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU5NTE4NzMzM30sIkRhdGVHcmVhdGVyVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNTkzOTYzMzMzfX19XX0_&Signature=k8F3Iz4oM6TPmu~tI5t9UXprYJdVYSalyIX~2bNPPv2BP6q8SfB2Bi-u0wk0m93ir4YGHqLTnjuwu2XD99T0Eo23VqtsbdifscBChgLvK78SORqHQM2NJ9xBzIzgo9fn8~~9ICgPpIkYZZ177a-oFLA8Zwma~T0o4yt1~6hqvqjMag770izGd980Umu~MYjxa7L7yVBLBO0CMbw1MCd3v4UjdITzmZQXNdDL8Dd8Y8nPhhv~LJncSDJC1td4ADWlsWNZwnOxXjvIZMT3k4Y5minLjuPtpksLHyvJ~3AIWs7LEqcM7vUbrXsHh~sc3NXDeWK2H62uhlYFA9Ugip~-cw__'
 %
 %   INPUT:
 %       latitude - the latitude of the desired location 
@@ -16,9 +13,7 @@ function imgArray = readWebTiles(latitude,longitude,zoom,tileSize,pad,url)
 %           [0,infinity)
 %       tileSize - the resolution of the tile in pixels
 %           probably either 256 or 512
-%       pad - the amount of tile to include from the center, ie 2 would pad
-%           by 2 in each direction for a 5x5 grid
-%           [0,infinity)
+%       pad - 
 %       url - the url of the tile server, formatted with wildcards
 %           surrounded by curly brackets, variables x, y, zoom
 
@@ -118,7 +113,7 @@ end
 
 s4 = url(start:length(url))
 
-[tileX, tileY] = EPSG3857(latitude,longitude,zoom);
+[tileX, tileY] = EPSG3857(latitude,longitude,zoom,tileSize);
     
 imgArray = zeros(tileSize*(1+pad*2),tileSize*(1+pad*2));
 
@@ -145,7 +140,5 @@ for i=-pad:pad
         imgArray(tileSize*(j+pad)+1 : tileSize*(j+pad+1) , tileSize*(i+pad)+1 : tileSize*(i+pad+1)) = webread(url);
     end
 end
-
-imshow(rescale(imgArray))
 
 end
