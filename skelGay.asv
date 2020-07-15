@@ -15,7 +15,9 @@ function skeltest = skelGay(im, varargin)
 %           angle when identifying ridges. theta=10 would look for very 
 %           straight ridge, theta = 90 would identify ridges up to 90 off 
 %           the opposite, while 120 looks for even minor changes
-%       'thres' - DEFAULT=0 - [0,255] - minimum value threshold 
+%       'thresh' - DEFAULT=3 - [0,255] - minimum value threshold 
+%       'minSize' - DEFAULT=25 - [1,infinity) - the minimum size of regions
+%           to be considered for hysterisis
 %
 %   OUTPUT:
 %       skeltest - the skeleton bitmap
@@ -29,6 +31,11 @@ blur = -1;
 recurse = -1;
 theta = -1;
 thresh = -1;
+minSize = -1;
+
+figure
+imshow(im)
+title('original image')
 
 if 2 < size(size(im),2)
     warning('Attempting to convert multidimensional image to grayscale')
@@ -38,8 +45,12 @@ elseif size(size(im),2) < 2
 else
     img = im;
 end
+
 img = rescale(img);
 [sizeY, sizeX] = size(img);
+figure
+imshow(img)
+title('grayscale image')
 
 if 1 < nargin
     n = 1;
@@ -78,6 +89,25 @@ if 1 < nargin
             end
         elseif strcmp(varargin(n), 'thresh')
             thresh = cell2mat(varargin(n+1));
+            if thresh < 0
+                error('Threshhold must be non-negative');
+            end
+            if 255 < thresh
+                error('Threshold must be less than 256');
+            end
+            if rem(thresh,1) ~= 0
+                warning('Rounding fractional threshold number');
+                thresh = round(thresh);
+            end      
+        elseif strcmp(varargin(n), 'minSize')
+            minSize = cell2mat(varargin(n+1));
+            if minSize < 1
+                error('minSize must be posotive');
+            end
+            if rem(thresh,1) ~= 0
+                warning('Rounding fractional minSize');
+                minSize = round(minSize);
+            end
         else
             error('Invalid input parameter');
         end
@@ -100,9 +130,12 @@ if theta == -1
     theta = 120;
 end
 if thresh == -1
-    thresh = 0;
+    thresh = 3;
+    %thresh = 0;
 end
-
+if minSize == -1
+    minSize = 25;
+end
 
 if 0 < blur
     imblur = imgaussfilt(img,blur);
@@ -110,9 +143,27 @@ elseif blur == 0
     imblur = img;
 end
 
+figure
+imshow(imblur)
+title('Blurred image')
 
-%TODO sobel vs prewitt
+imblur1 = imblur;
+beep = im2bw(imblur,thresh/256);
+imblur = imblur .* beep;
+
+[Gmag1, Gdir1] = imgradient(imblur1,'sobel');
 [Gmag, Gdir] = imgradient(imblur,'sobel');
+figure
+imshowpair(Gdir,Gdir1,'diff')
+title('Removed low intensity areas');
+
+for x=1:sizeX
+    for y=1:sizeY
+        if Gmag(y,x) == 0
+            Gdir(y,x) = -1;
+        end
+    end
+end
 
 Gmag = im2uint8(rescale(Gmag, 0, 1));
 dir = round(Gdir/180*4)*180/4;
@@ -120,35 +171,9 @@ dirfag = round(Gdir/180*4);
 Gdir8 = im2uint8(rescale(dir, 0, 1));
 Gdir2 = im2uint8(rescale(Gdir, 0, 1));
 
-
-%{
-for x=1:sizeX
-    for y=1:sizeY
-        if dirfag(y,x) == -4
-            dirfag(y,x) = 4
-        end
-    end
-end
-%}
-
-%{
-imgpad = padarray(img,[1,1],'replicate','both');
-dirX = zeros(sizeY,sizeX);
-dirY = zeros(sizeY,sizeX);
-opy = single([1 1 1; 0 0 0; -1 -1 -1]);
-opX = single([-1 0 1; -1 0 1; -1 0 1]);
-for x=1:size(img,2)
-    for y=1:size(img,1)
-        kernel = single(imgpad(y-1+1:y+1+1,x-1+1:x+1+1));
-        dirX(y,x) = sum(sum(kernel .* opX));
-        dirY(y,x) = sum(sum(kernel .* opY));
-    end
-end
-%}
-
 %impossible val
 %TODO remove 999 padding
-dirPad = padarray(Gdir,[ps ps],999,'both');
+dirPad = padarray(Gdir,[ps ps],-1,'both');
 valPad = padarray(imblur,[ps ps],-1,'both');
 
 skel = zeros(sizeY,sizeX);
@@ -167,8 +192,7 @@ for y=1:sizeY
                 diradj = dirPad(y + jj + ps, x + ii + ps);
                 
 %TODO validate < vs <= &&
-                %if diradj~=999 && diradj~=0 && dirval~=0
-                if diradj~=999
+                if diradj~=-1 && dirval~=-1
                
                     if 360 <= (dir180 + theta)
                         
@@ -210,159 +234,36 @@ for y=1:sizeY
     end
 end
 
+figure
+imshowpair(Gdir,skel)
+title('Identified ridge/valleys')
 
+[poop,pee] = bwlabel(skel);
+connectSum = sum(bsxfun(@eq,poop(:),1:pee));
 
-
-%{
-for x=1:sizeX
-    for y=1:sizeY
-        if dirfag(y,x) == -4
-            dirfag(y,x) = 4
-        end
+xd = [];
+yd = [];
+for i=1:pee
+    if connectSum(i) < minSize
+        [r,c] = find(poop==i);
+        yd = [yd;r];
+        xd = [xd;c];
     end
 end
-%}
+skel3 = skel;
 
-%{
-imgpad = padarray(img,[1,1],'replicate','both');
-dirX = zeros(sizeY,sizeX);
-dirY = zeros(sizeY,sizeX);
-opy = single([1 1 1; 0 0 0; -1 -1 -1]);
-opX = single([-1 0 1; -1 0 1; -1 0 1]);
-for x=1:size(img,2)
-    for y=1:size(img,1)
-        kernel = single(imgpad(y-1+1:y+1+1,x-1+1:x+1+1));
-        dirX(y,x) = sum(sum(kernel .* opX));
-        dirY(y,x) = sum(sum(kernel .* opY));
-    end
+for i=1:length(yd)
+    skel(yd(i),xd(i)) = 0;
 end
-%}
 
-%impossible val
-%dirPad = padarray(dir,[ps ps],999,'both');
-%valPad = padarray(img,[ps ps],-1,'both');
-
-%skel = zeros(size(img));
-
-%{
-for y=1:size(img,1)
-    for x=1:size(img,2)
-        dirval = dir(y,x);
-        valhere = img(y,x);
-        
-        if dirval==45 || dirval==90 || dirval==135
-            direy = -1;
-        elseif dirval==-45 || dirval==-90 || dirval==-135
-            direy = 1;
-        else
-            direy = 0;
-        end
-        
-        if dirval==-45 || dirval==0 || dirval==45
-            direx = 1;
-        elseif dirval==135 || dirval==180 || dirval==-180 || dirval==-135
-            direx = -1;
-        else
-            direx = 0;
-        end
-        
-        %diradj = dirPad(y + direy + 1, x + direx + 1);
-        flagg = false;
-        for ii=-ps:ps
-            for jj=-ps:ps
-                diradj = dirPad(y + jj + ps, x + ii + ps);
-                valadj = valPad(y + jj + ps, x + ii + ps);
-
-                if dirval == 0
-                    if diradj==180 || diradj==-180 || diradj==135 || diradj==-135
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == 45
-                    if diradj==-135 || diradj==-90 || diradj==-180 || diradj==180
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == 90
-                    if diradj==-90 || diradj==-45 || diradj==-135
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == 135
-                    if diradj==-45 || diradj==0 || diradj==-90
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == 180 || dirval == -180
-                    if diradj==0 || diradj==45 || diradj==-45
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == -135
-                    if diradj==45 || diradj==90 || diradj==0
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == -90
-                    if diradj==90 || diradj==45 || diradj==135
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                elseif dirval == -45
-                    if diradj==135 || diradj==180 || diradj==-180 || diradj==90
-                        flagg=true;
-                        %skel(y,x) = 1;
-                    end
-                end
-        
-        if flagg == true %&& valadj < valhere
-            skel(y,x) = 1;
-        end
-            
-            end
-        end
-        
-        
-        %for j=-1:1
-        %    for i=-1:1
-         %       if j~=0 && i~=0
-          %          dirNew = dirPad(y+j+1,x+i+1);
-           %         if (dirVal==0 && dirNew==180) || (dirVal==0 && dirNew==-180) || (dirVal==45 && dirNew==-135) || (dirVal==-45 && dirNew ==135) || (dirVal==90 && dirNew ==-90) || (dirVal==-90 && dirNew==90) || (dirVal==135 && dirNew==-45) || (dirVal==-135 && dirNew==45) || (dirVal==180 && dirNew==0) || (dirVal==-180 && dirNew==0)
-            %            skel(y,x) = 1;
-             %           skel(y+j,x+i) = 1;
-              %      end
-               % end
-            %end
-        %end
-    end
-end
-%}
-
-beep = im2bw(imblur,thresh/256);
-skel = skel .* beep;
+figure
+imshowpair(skel,skel3);
+title('Removed small regions')
 
 skelpad = padarray(skel,[1,1],0,'both');
 skelpadc = skelpad;
 
-if 0 < recurse
-    for x=1:sizeX
-        for y=1:sizeY
-            if skelpad(y+1,x+1) == 1
-                count8 = -1;
-                for i=-1:1
-                    for j=-1:1
-                        if skelpad(y+1+j,x+1+i) == 1
-                            count8 = count8 + 1;
-                        end
-                    end
-                end
-                if count8 = 0;
-                    skelpad(y+1,x+1) = 0;
-                end
-            end
-        end
-    end
-
+%Fill in some regions
 for asdf=1:recurse
     for x=1:sizeX
         for y=1:sizeY
@@ -388,27 +289,18 @@ for asdf=1:recurse
     end
 end
 
-%figure
-%imshowpair(skelpadc,skelpad)
+figure
+imshowpair(skelpadc,skelpad)
+title('Filled holes')
 
-skelc = skel;
 skel = skelpad(2:sizeY+1,2:sizeX+1);
 
-
-%{
-figure
-subplot(2,2,1), imshow(skel)
-subplot(2,2,2), imshow(Gdir8)
-subplot(2,2,3), imshow(img)
-subplot(2,2,4), imshow(imblur)
-%}
-
 skeltest = bwskel(logical(skel));
+skeltest1 = skeltest;
 
-%{
-beep = im2bw(img,thresh/256);
-skeltest = skeltest .* beep;
-%}
+figure
+imshowpair(skel,skeltest)
+title('skeletonization')
 
 skeltestpad = padarray(skeltest,[1,1],1,'both');
 
@@ -462,18 +354,13 @@ for x=1:sizeX
 end
 skeltest = skeltestpad(2:sizeY+1,2:sizeX+1);
 
-
 figure
-imshowpair(skel,skeltest);
+imshowpair(skeltest,skel)
+title('Hysterisis')
 
 figure
 imshowpair(skeltest,im)
-
-figure
-imshowpair(Gdir,skeltest)
-
-figure
-imshowpair(Gdir,skel)
+title('Skeletonization')
 
 %figure
 %imtool(skeltest)
