@@ -18,6 +18,8 @@ function skeltest = skelGay(im, varargin)
 %       'thresh' - DEFAULT=3 - [0,255] - minimum value threshold 
 %       'minSize' - DEFAULT=25 - [1,infinity) - the minimum size of regions
 %           to be considered for hysterisis
+%       'render' - DEFAULT=1 - {0,1} - whether to render the intermediate 
+%           images
 %
 %   OUTPUT:
 %       skeltest - the skeleton bitmap
@@ -26,45 +28,38 @@ function skeltest = skelGay(im, varargin)
 close all
 
 %flag states
-padsize = -1;
+padSize = -1;
 blur = -1;
 recurse = -1;
 theta = -1;
 thresh = -1;
 minSize = -1;
-
-figure
-imshow(im)
-title('original image')
+render = -1;
 
 if 2 < size(size(im),2)
     warning('Attempting to convert multidimensional image to grayscale')
-    img = rgb2gray(im);
+    imGray = rgb2gray(im);
 elseif size(size(im),2) < 2
     error('Not an image?')
 else
-    img = im;
+    imGray = im;
 end
 
-img = rescale(img);
-[sizeY, sizeX] = size(img);
-figure
-imshow(img)
-title('grayscale image')
+imGray = rescale(imGray);
+[sizeY, sizeX] = size(imGray);
 
 if 1 < nargin
     n = 1;
     while n < nargin
         if strcmp(varargin(n), 'padsize') 
-            padsize = cell2mat(varargin(n+1));
-            if rem(padsize,1) ~= 0
+            padSize = cell2mat(varargin(n+1));
+            if rem(padSize,1) ~= 0
                 warning('Rounding fractional padding');
-                padsize = round(padsize);
+                padSize = round(padSize);
             end
-            if padsize < 0
+            if padSize < 0
                 error('Pad size must be a posotive integer');
             end
-            ps=padsize;
         elseif strcmp(varargin(n), 'blur')
             blur = cell2mat(varargin(n+1));
             if blur < 0
@@ -108,6 +103,15 @@ if 1 < nargin
                 warning('Rounding fractional minSize');
                 minSize = round(minSize);
             end
+        elseif strcmp(varargin(n), 'render')
+            render = cell2mat(varargin(n+1));
+            if ~(isa(render,'numeric') || isa(render,'float') || isa(render,'integer'))
+                error('Enter render as either 1 (true) or 0 (false)');
+            elseif render ~= 0 && render ~= 1
+                error('Enter render as either 1 (true) or 0 (false)');           
+            else
+                %render = (boolean)render;
+            end
         else
             error('Invalid input parameter');
         end
@@ -116,9 +120,8 @@ if 1 < nargin
     end
 end
 
-if padsize == -1
-    padsize = 1;
-    ps = 1;
+if padSize == -1
+    padSize = 1;
 end
 if blur == -1
     blur = 1;
@@ -130,35 +133,53 @@ if theta == -1
     theta = 120;
 end
 if thresh == -1
-    thresh = 3;
-    %thresh = 0;
+    thresh = 10;
 end
 if minSize == -1
     minSize = 25;
 end
-
-beep = im2bw(img,thresh/256);
-img = img .* beep;
-
-if 0 < blur
-    imblur = imgaussfilt(img,blur);
-elseif blur == 0
-    imblur = img;
+if render == -1
+    render = 1;
 end
 
+if render
+    figure
+    imshow(im)
+    title('original image')
+end
+if render
 figure
-imshow(imblur)
-title('Blurred image')
+imshow(imGray)
+title('grayscale image')
+end
 
-imblur1 = imblur;
-beep = im2bw(imblur,thresh/256);
-imblur = imblur .* beep;
+imMask = imbinarize(imGray,thresh/256);
+imGray = imGray .* imMask;
+
+if 0 < blur
+    imBlur = imgaussfilt(imGray,blur);
+elseif blur == 0
+    imBlur = imGray;
+end
+
+if render
+    figure
+    imshow(imBlur)
+    title('Blurred image')
+end
+
+imblur1 = imBlur;
+imMask = imbinarize(imBlur,thresh/256);
+imBlur = imBlur .* imMask;
 
 [Gmag1, Gdir1] = imgradient(imblur1,'sobel');
-[Gmag, Gdir] = imgradient(imblur,'sobel');
-figure
-imshowpair(Gdir,Gdir1,'diff')
-title('Removed low intensity areas');
+[Gmag, Gdir] = imgradient(imBlur,'sobel');
+
+if render
+    figure
+    imshowpair(Gdir,Gdir1,'diff')
+    title('Removed low intensity areas');
+end
 
 for x=1:sizeX
     for y=1:sizeY
@@ -168,31 +189,31 @@ for x=1:sizeX
     end
 end
 
-Gmag = im2uint8(rescale(Gmag, 0, 1));
+%Gmag = im2uint8(rescale(Gmag, 0, 1));
 dir = round(Gdir/180*4)*180/4;
-dirfag = round(Gdir/180*4);
-Gdir8 = im2uint8(rescale(dir, 0, 1));
-Gdir2 = im2uint8(rescale(Gdir, 0, 1));
+%dirfag = round(Gdir/180*4);
+%Gdir8 = im2uint8(rescale(dir, 0, 1));
+%Gdir2 = im2uint8(rescale(Gdir, 0, 1));
 
 %impossible val
 %TODO remove 999 padding
-dirPad = padarray(Gdir,[ps ps],-1,'both');
-valPad = padarray(imblur,[ps ps],-1,'both');
+dirPad = padarray(Gdir,[padSize padSize],-1,'both');
+valPad = padarray(imBlur,[padSize padSize],-1,'both');
 
 skel = zeros(sizeY,sizeX);
 
 for y=1:sizeY
     for x=1:sizeX
-        magval = imblur(y,x);
+        magval = imBlur(y,x);
         dirval = Gdir(y,x);
         dir180 = mod(dirval+180,360);
         
-        ii=-ps;
-        while ii<=ps
-            jj=-ps;
-            while jj<=ps
-                magadj = valPad(y + jj + ps, x + ii + ps);
-                diradj = dirPad(y + jj + ps, x + ii + ps);
+        ii=-padSize;
+        while ii<=padSize
+            jj=-padSize;
+            while jj<=padSize
+                magadj = valPad(y + jj + padSize, x + ii + padSize);
+                diradj = dirPad(y + jj + padSize, x + ii + padSize);
                 
 %TODO validate < vs <= &&
                 if diradj~=-1 && dirval~=-1
@@ -237,31 +258,30 @@ for y=1:sizeY
     end
 end
 
-figure
-imshowpair(Gdir,skel)
-title('Identified ridge/valleys')
+if render
+    figure
+    imshowpair(Gdir,skel)
+    title('Identified ridge/valleys')
+end
 
-[poop,pee] = bwlabel(skel);
-connectSum = sum(bsxfun(@eq,poop(:),1:pee));
+[imLabel,regionCount] = bwlabel(skel);
+connectSum = sum(bsxfun(@eq,imLabel(:),1:regionCount));
 
-xd = [];
-yd = [];
-for i=1:pee
+skelCopy = skel;
+for i=1:regionCount
     if connectSum(i) < minSize
-        [r,c] = find(poop==i);
-        yd = [yd;r];
-        xd = [xd;c];
+        [r,c] = find(imLabel==i);
+        for n=1:length(r)
+            skel(r(n),c(n)) = 0;
+        end
     end
 end
-skel3 = skel;
 
-for i=1:length(yd)
-    skel(yd(i),xd(i)) = 0;
+if render
+    figure
+    imshowpair(skel,skelCopy);
+    title('Removed small regions')
 end
-
-figure
-imshowpair(skel,skel3);
-title('Removed small regions')
 
 skelpad = padarray(skel,[1,1],0,'both');
 skelpadc = skelpad;
@@ -292,18 +312,22 @@ for asdf=1:recurse
     end
 end
 
-figure
-imshowpair(skelpadc,skelpad)
-title('Filled holes')
+if render
+    figure
+    imshowpair(skelpadc,skelpad)
+    title('Filled holes')
+end
 
 skel = skelpad(2:sizeY+1,2:sizeX+1);
 
 skeltest = bwskel(logical(skel));
 skeltest1 = skeltest;
 
-figure
-imshowpair(skel,skeltest)
-title('skeletonization')
+if render
+    figure
+    imshowpair(skel,skeltest)
+    title('skeletonization')
+end
 
 skeltestpad = padarray(skeltest,[1,1],1,'both');
 
@@ -357,9 +381,11 @@ for x=1:sizeX
 end
 skeltest = skeltestpad(2:sizeY+1,2:sizeX+1);
 
-figure
-imshowpair(skeltest,skeltest1)
-title('Hysterisis')
+if render
+    figure
+    imshowpair(skeltest,skeltest1)
+    title('Hysterisis')
+end
 
 figure
 imshowpair(skeltest,im)
@@ -367,7 +393,6 @@ title('Skeletonization')
 
 %figure
 %imtool(skeltest)
-%figure
-%imshowpair(skelc,img)
+
 end
 

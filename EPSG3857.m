@@ -17,7 +17,6 @@ function [tileX, tileY] = EPSG3857(latitude, longitude, zoom)
 %       tileX - the # x tile
 %       tileY - the # y tile
 %
-% https://docs.microsoft.com/en-us/azure/azure-maps/zoom-levels-and-tile-grid?tabs=csharp
 
 if latitude <= -90 || 90 <= latitude
     error('latitude must be between (-90,90) degrees');

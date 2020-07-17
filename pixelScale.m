@@ -1,5 +1,6 @@
 function scale = pixelScale(latitude, zoom, tileSize)
 %Determine the pixel resolution of a given map
+%measured in meters/pixel
 %
 %   EXAMPLES:
 %       scale = pixelScale(41.661, 15, 512)
