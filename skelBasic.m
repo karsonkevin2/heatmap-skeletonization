@@ -1,12 +1,14 @@
-function skel = skelBasic(im,gaussOrder,thres,branch,neighborhood)
-%Skeletonize an image with matlab's built in skel function
+function skel = skelBasic(im,gaussOrder,branch,thresh,neighborhood)
+%Naive approach to skeletonization of a heatmap by local thresholding and 
+%then performing a skeletonization 
 %
 
 %   INPUT:
 %       im - the input image, will attempt to convert color images
 %       gaussOrder - the order of the gaussian filter
-%       thres - the threshold from 0-256 of data to examine
+%       thresh - the threshold from 0-256 of data to examine
 %       branch - the minimum size of a branch when pruning
+%       neighborhood - 
 %
 %   OUTPUT:
 %       skel - the skeletonization
@@ -20,7 +22,6 @@ elseif size(size(im),2) < 2
 else
     img = im;
 end
-
 
 if 0 < gaussOrder
     imblur = imgaussfilt(img,gaussOrder);
@@ -45,7 +46,7 @@ imbw = imbinarize(imblur,T);
 for i=1:size(im,2)
     for j=1:size(im,1)
        % imbw(j,i)=0;
-        if imbw(j,i) == 1 && im(j,i) < thres
+        if imbw(j,i) == 1 && im(j,i) < thresh
             imbw(j,i) = 0;
         end
     end

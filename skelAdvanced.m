@@ -1,4 +1,4 @@
-function skeltest = skelGay(im, varargin)
+function skeltest = skelAdvanced(im, varargin)
 %Skeletonizes a traffic heatmap
 
 %INPUT:
@@ -20,6 +20,8 @@ function skeltest = skelGay(im, varargin)
 %           to be considered for hysterisis
 %       'render' - DEFAULT=1 - {0,1} - whether to render the intermediate 
 %           images
+%       'branch' - DEFAULT=3 - [0,infinity) - the minimum branch length
+%           kept while skeletonizing
 %
 %   OUTPUT:
 %       skeltest - the skeleton bitmap
@@ -35,6 +37,7 @@ theta = -1;
 thresh = -1;
 minSize = -1;
 render = -1;
+branch = -1;
 
 if 2 < size(size(im),2)
     warning('Attempting to convert multidimensional image to grayscale')
@@ -112,6 +115,15 @@ if 1 < nargin
             else
                 %render = (boolean)render;
             end
+        elseif strcmp(varargin(n), 'branch')
+            branch = cell2mat(varargin(n+1));
+            if branch < 0
+                error('minSize must be nonnegative');
+            end
+            if rem(branch,1) ~= 0
+                warning('Rounding fractional branch');
+                branch = round(branch);
+            end
         else
             error('Invalid input parameter');
         end
@@ -140,6 +152,9 @@ if minSize == -1
 end
 if render == -1
     render = 1;
+end
+if branch == -1
+    branch = 3;
 end
 
 if render
@@ -320,7 +335,7 @@ end
 
 skel = skelpad(2:sizeY+1,2:sizeX+1);
 
-skeltest = bwskel(logical(skel));
+skeltest = bwskel(logical(skel), 'MinBranchLength', branch);
 skeltest1 = skeltest;
 
 if render
